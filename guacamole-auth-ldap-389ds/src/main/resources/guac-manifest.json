@@ -1,0 +1,16 @@
+{
+
+    "guacamoleVersion" : "0.9.8",
+
+    "name"      : "LDAP 389ds Authentication",
+    "namespace" : "guac-ldap-389ds",
+
+    "authProviders" : [
+        "net.sourceforge.guacamole.net.auth.ldap389ds.LDAP389dsAuthenticationProvider"
+    ],
+
+    "translations" : [
+        "translations/en.json"
+    ]
+
+}

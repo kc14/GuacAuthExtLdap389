@@ -1,0 +1,28 @@
+# 89guac.ldif - Schema for Guac Configuration Groups
+################################################################################
+#
+dn: cn=schema
+#
+################################################################################
+#
+attributeTypes: (
+  1.3.6.1.4.1.38971.1.1.1
+  NAME 'guacConfigProtocol'
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+#
+################################################################################
+#
+attributeTypes: (
+  1.3.6.1.4.1.38971.1.1.2
+  NAME 'guacConfigParameter'
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+#
+################################################################################
+#
+objectClasses: (
+  1.3.6.1.4.1.38971.1.2.1
+  NAME 'guacConfigGroup'
+  DESC 'Guacamole configuration group'
+  SUP groupOfNames
+  MUST guacConfigProtocol
+  MAY guacConfigParameter )
