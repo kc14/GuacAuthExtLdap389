@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package org.kc.guacamole.auth.ldap389ds.connection;
+package io.github.kc14.guacamole.auth.ldap389ds.connection;
 
 import com.google.inject.Inject;
 import com.novell.ldap.LDAPAttribute;
@@ -29,7 +29,11 @@ import com.novell.ldap.LDAPEntry;
 import com.novell.ldap.LDAPException;
 import com.novell.ldap.LDAPSearchResults;
 import com.novell.ldap.util.DN;
+import com.novell.ldap.util.RDN;
 
+import io.github.kc14.com.novell.ldap.util.DNHelper;
+import io.github.kc14.guacamole.auth.ldap389ds.config.ConfigurationService;
+import io.github.kc14.guacamole.auth.ldap389ds.ldap.EscapingService;
 import net.sourceforge.guacamole.net.auth.ldap389ds.LDAP389dsAuthenticationProvider;
 
 import java.util.ArrayList;
@@ -37,6 +41,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 
 import org.glyptodon.guacamole.GuacamoleException;
 import org.glyptodon.guacamole.GuacamoleServerException;
@@ -44,8 +49,6 @@ import org.glyptodon.guacamole.net.auth.AuthenticatedUser;
 import org.glyptodon.guacamole.net.auth.Connection;
 import org.glyptodon.guacamole.net.auth.simple.SimpleConnection;
 import org.glyptodon.guacamole.protocol.GuacamoleConfiguration;
-import org.kc.guacamole.auth.ldap389ds.ConfigurationService;
-import org.kc.guacamole.auth.ldap389ds.EscapingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -168,12 +171,11 @@ public class ConnectionService {
      * @throws GuacamoleException
      */
     protected boolean startsWithConfigGroupPrefix(DN guacConfigGroupDN) throws GuacamoleException {
-		boolean noTypesTrue = true;
-		String[] explodedGuacConfigGroupDN = guacConfigGroupDN.explodeDN(noTypesTrue);
+		Vector<RDN> guacConfigGroupRDNs = DNHelper.getRDNs(guacConfigGroupDN);
 		String guacConfigGroupPrefix = confService.getGuacConfigGroupPrefix();
-		if (explodedGuacConfigGroupDN.length == 0 || explodedGuacConfigGroupDN[0].toLowerCase().startsWith(guacConfigGroupPrefix.toLowerCase()) == false) {
-			logger.warn(
-					"guacConfigGroup \"{}\" does not have configured prefix \"{}\" (entry ignored).",
+		if (guacConfigGroupRDNs.isEmpty() || guacConfigGroupRDNs.firstElement().getValue().toLowerCase().startsWith(guacConfigGroupPrefix.toLowerCase()) == false) {
+			logger.info(
+					"group \"{}\" will not be considered as a guacConfigGroup since it has not the configured prefix \"{}\" (entry ignored).",
 					guacConfigGroupDN,
 					guacConfigGroupPrefix);
 			return false;
@@ -298,11 +300,11 @@ public class ConnectionService {
 				LDAPAttribute parameterAttribute = guacConfigGroupEntry.getAttribute("guacConfigParameter");
 				processGuacConfigGroupParameters(parameterAttribute, config);
 
-				// Store connection using cn for both identifier and name
+				// Store connection using CN as name && DN as identifier
 				String name = cn.getStringValue();
 				String identifier = guacConfigGroupEntry.getDN();
 				Connection connection = new SimpleConnection(name, identifier, config);
-				connection.setParentIdentifier(LDAP389dsAuthenticationProvider.ROOT_CONNECTION_GROUP);
+				connection.setParentIdentifier(LDAP389dsAuthenticationProvider.ROOT_CONNECTION_GROUP); // May be overridden when creating connection groups
 				connections.put(connection.getIdentifier(), connection);
 			}
 			

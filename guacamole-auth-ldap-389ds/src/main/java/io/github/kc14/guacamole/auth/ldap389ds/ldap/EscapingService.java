@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package org.kc.guacamole.auth.ldap389ds;
+package io.github.kc14.guacamole.auth.ldap389ds.ldap;
 
 /**
  * Service for escaping LDAP filters, distinguished names (DN's), etc.

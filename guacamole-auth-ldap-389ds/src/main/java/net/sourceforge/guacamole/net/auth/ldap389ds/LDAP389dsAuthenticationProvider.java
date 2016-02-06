@@ -26,13 +26,15 @@ package net.sourceforge.guacamole.net.auth.ldap389ds;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+
+import io.github.kc14.guacamole.auth.ldap389ds.AuthenticationProviderService;
+import io.github.kc14.guacamole.auth.ldap389ds.LDAP389dsAuthenticationProviderModule;
+
 import org.glyptodon.guacamole.GuacamoleException;
 import org.glyptodon.guacamole.net.auth.AuthenticatedUser;
 import org.glyptodon.guacamole.net.auth.AuthenticationProvider;
 import org.glyptodon.guacamole.net.auth.Credentials;
 import org.glyptodon.guacamole.net.auth.UserContext;
-import org.kc.guacamole.auth.ldap389ds.AuthenticationProviderService;
-import org.kc.guacamole.auth.ldap389ds.LDAP389dsAuthenticationProviderModule;
 
 /**
  * Allows a user to be authenticated against an LDAP server. A user may have
@@ -56,7 +58,8 @@ public class LDAP389dsAuthenticationProvider implements AuthenticationProvider {
     /**
      * The identifier reserved for the root connection group.
      */
-    public static final String ROOT_CONNECTION_GROUP = "ROOT";
+    // public static final String ROOT_CONNECTION_GROUP = "ROOT";
+    public static final String ROOT_CONNECTION_GROUP = "uuid:6B007C4E-7152-42B8-9893-EAED845663D6:ROOT"; // Make chance for ID collision as low as possible
 
     /**
      * Injector which will manage the object graph of this authentication

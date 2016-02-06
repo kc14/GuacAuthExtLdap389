@@ -20,20 +20,21 @@
  * THE SOFTWARE.
  */
 
-package org.kc.guacamole.auth.ldap389ds.user;
+package io.github.kc14.guacamole.auth.ldap389ds.user;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.glyptodon.guacamole.GuacamoleException;
 import org.glyptodon.guacamole.net.auth.User;
-import org.kc.guacamole.auth.ldap389ds.ConfigurationService;
-import org.kc.guacamole.auth.ldap389ds.EscapingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 import com.novell.ldap.LDAPConnection;
+
+import io.github.kc14.guacamole.auth.ldap389ds.config.ConfigurationService;
+import io.github.kc14.guacamole.auth.ldap389ds.ldap.EscapingService;
 
 /**
  * Service for queries the users visible to a particular Guacamole user

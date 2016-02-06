@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package org.kc.guacamole.auth.ldap389ds.user;
+package io.github.kc14.guacamole.auth.ldap389ds.user;
 
 import com.google.inject.Inject;
 import org.glyptodon.guacamole.net.auth.AbstractAuthenticatedUser;

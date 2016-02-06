@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-package org.kc.guacamole.auth.ldap389ds;
+package io.github.kc14.guacamole.auth.ldap389ds.config;
 
 import org.glyptodon.guacamole.properties.BooleanGuacamoleProperty;
 import org.glyptodon.guacamole.properties.IntegerGuacamoleProperty;
@@ -40,6 +40,38 @@ public class LDAP389dsGuacamoleProperties {
      * This class should not be instantiated.
      */
     private LDAP389dsGuacamoleProperties() {}
+
+    /**
+     * The encryption method to use when connecting to the LDAP server, if any.
+     * The chosen method will also dictate the default port if not already
+     * explicitly specified via LDAP_PORT.
+     */
+    public static final EncryptionMethodProperty LDAP_ENCRYPTION_METHOD = new EncryptionMethodProperty() {
+
+        @Override
+        public String getName() { return "ldap-encryption-method"; }
+
+    };
+    
+    /**
+     * The hostname of the LDAP server to connect to when authenticating users.
+     */
+    public static final StringGuacamoleProperty LDAP_HOSTNAME = new StringGuacamoleProperty() {
+
+        @Override
+        public String getName() { return "ldap-hostname"; }
+
+    };
+
+    /**
+     * The port on the LDAP server to connect to when authenticating users.
+     */
+    public static final IntegerGuacamoleProperty LDAP_PORT = new IntegerGuacamoleProperty() {
+
+        @Override
+        public String getName() { return "ldap-port"; }
+
+    };
 
     /**
      * The base DN to search for Guacamole configurations.
@@ -71,36 +103,6 @@ public class LDAP389dsGuacamoleProperties {
 
         @Override
         public String getName() { return "ldap-username-attribute"; }
-
-    };
-
-    /**
-     * Use TLS encryption when connecting to the LDAP server
-     */
-    public static final StringGuacamoleProperty LDAP_TRANSPORT_LAYER = new StringGuacamoleProperty() {
-
-        @Override
-        public String getName() { return "ldap-transport-layer"; }
-
-    };
-
-    /**
-     * The port on the LDAP server to connect to when authenticating users.
-     */
-    public static final IntegerGuacamoleProperty LDAP_PORT = new IntegerGuacamoleProperty() {
-
-        @Override
-        public String getName() { return "ldap-port"; }
-
-    };
-
-    /**
-     * The hostname of the LDAP server to connect to when authenticating users.
-     */
-    public static final StringGuacamoleProperty LDAP_HOSTNAME = new StringGuacamoleProperty() {
-
-        @Override
-        public String getName() { return "ldap-hostname"; }
 
     };
 

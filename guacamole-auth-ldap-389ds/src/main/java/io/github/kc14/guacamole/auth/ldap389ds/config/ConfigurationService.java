@@ -20,9 +20,10 @@
  * THE SOFTWARE.
  */
 
-package org.kc.guacamole.auth.ldap389ds;
+package io.github.kc14.guacamole.auth.ldap389ds.config;
 
 import com.google.inject.Inject;
+
 import org.glyptodon.guacamole.GuacamoleException;
 import org.glyptodon.guacamole.environment.Environment;
 
@@ -40,24 +41,27 @@ public class ConfigurationService {
     private Environment environment;
 
     /**
-     * The type of transport to use for connecting to the LDAP server.
+     * Returns the encryption method that should be used when connecting to the
+     * LDAP server. By default, no encryption is used.
+     * 
      * Currently the following options are available (the default is socket):
      * <ul>
-     *   <li>socket (default)</li>
+     *   <li>NONE (default)</li>
      *   <li>SSL</li>
      *   <li>TLS</li>
      * </ul>
-     * 
+     *
      * @return
-     *     Returns the type of transport. The default is {@code socket}.
-     *     
+     *     The encryption method that should be used when connecting to the
+     *     LDAP server. The default is {@code NONE}.
+     *
      * @throws GuacamoleException
      *     If guacamole.properties cannot be parsed.
      */
-    public String getLdapTransportLayer() throws GuacamoleException {
+    public EncryptionMethod getEncryptionMethod() throws GuacamoleException {
         return environment.getProperty(
-            LDAP389dsGuacamoleProperties.LDAP_TRANSPORT_LAYER,
-            "socket"
+        	LDAP389dsGuacamoleProperties.LDAP_ENCRYPTION_METHOD,
+            EncryptionMethod.NONE
         );
     }
 
@@ -81,8 +85,9 @@ public class ConfigurationService {
 
     /**
      * Returns the port of the LDAP server configured with
-     * guacamole.properties. By default, this will be 389 - the standard LDAP
-     * port.
+     * guacamole.properties. The default value depends on which encryption
+     * method is being used. For unencrypted LDAP and STARTTLS, this will be
+     * 389. For LDAPS (LDAP over SSL) this will be 636.
      *
      * @return
      *     The port of the LDAP server, as configured with
@@ -93,8 +98,8 @@ public class ConfigurationService {
      */
     public int getServerPort() throws GuacamoleException {
         return environment.getProperty(
-            LDAP389dsGuacamoleProperties.LDAP_PORT,
-            389
+        	LDAP389dsGuacamoleProperties.LDAP_PORT,
+            getEncryptionMethod().DEFAULT_PORT
         );
     }
 

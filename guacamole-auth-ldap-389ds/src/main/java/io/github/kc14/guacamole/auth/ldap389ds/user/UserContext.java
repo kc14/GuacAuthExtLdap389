@@ -20,11 +20,14 @@
  * THE SOFTWARE.
  */
 
-package org.kc.guacamole.auth.ldap389ds.user;
+package io.github.kc14.guacamole.auth.ldap389ds.user;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Vector;
+
+import static io.github.kc14.com.novell.ldap.util.DNHelper.*;
 
 import org.glyptodon.guacamole.GuacamoleException;
 import org.glyptodon.guacamole.form.Form;
@@ -39,15 +42,17 @@ import org.glyptodon.guacamole.net.auth.simple.SimpleConnectionGroup;
 import org.glyptodon.guacamole.net.auth.simple.SimpleConnectionGroupDirectory;
 import org.glyptodon.guacamole.net.auth.simple.SimpleDirectory;
 import org.glyptodon.guacamole.net.auth.simple.SimpleUser;
-import org.glyptodon.guacamole.token.StandardTokens;
-import org.glyptodon.guacamole.token.TokenFilter;
-import org.kc.guacamole.auth.ldap389ds.connection.ConnectionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 import com.novell.ldap.LDAPConnection;
+import com.novell.ldap.util.DN;
+import com.novell.ldap.util.RDN;
 
+import io.github.kc14.guacamole.auth.ldap389ds.connection.ConnectionService;
+import io.github.kc14.guacamole.auth.ldap389ds.connection.ConnectionTreeContext;
+import io.github.kc14.guacamole.auth.ldap389ds.utils.MacroPreProcessor;
 import net.sourceforge.guacamole.net.auth.ldap389ds.LDAP389dsAuthenticationProvider;
 
 /**
@@ -81,6 +86,9 @@ public class UserContext implements org.glyptodon.guacamole.net.auth.UserContext
      */
     @Inject
     private AuthenticationProvider authProvider;
+    
+    @Inject
+    private ConnectionTreeContext folderTreeContext;
 
     /**
      * Reference to a User object representing the user whose access level
@@ -93,23 +101,6 @@ public class UserContext implements org.glyptodon.guacamole.net.auth.UserContext
      * with this UserContext.
      */
     private Directory<User> userDirectory;
-
-    /**
-     * Directory containing all Connection objects accessible to the user
-     * associated with this UserContext.
-     */
-    private Directory<Connection> connectionDirectory;
-
-    /**
-     * Directory containing all ConnectionGroup objects accessible to the user
-     * associated with this UserContext.
-     */
-    private Directory<ConnectionGroup> connectionGroupDirectory;
-
-    /**
-     * Reference to the root connection group.
-     */
-    private ConnectionGroup rootGroup;
 
     /**
      * Initializes this UserContext using the provided AuthenticatedUser and
@@ -128,8 +119,7 @@ public class UserContext implements org.glyptodon.guacamole.net.auth.UserContext
      *     If associated data stored within the LDAP directory cannot be
      *     queried due to an error.
      */
-    public void init(AuthenticatedUser user, LDAPConnection ldapConnection)
-            throws GuacamoleException {
+    public void init(AuthenticatedUser user, LDAPConnection ldapConnection) throws GuacamoleException {
 
         // Query all accessible users
         userDirectory = new SimpleDirectory<User>(
@@ -139,42 +129,25 @@ public class UserContext implements org.glyptodon.guacamole.net.auth.UserContext
         // Query all accessible connections
         Map<String, Connection> connections = connectionService.getConnections(user, ldapConnection);
         
-        // Build credential TokenFilter
-        TokenFilter tokenFilter = new TokenFilter();
-        StandardTokens.addStandardTokens(tokenFilter, user.getCredentials());
-
-        // Filter each configuration
-        for (Connection connection : connections.values()) {
-        	tokenFilter.filterValues(connection.getConfiguration().getParameters());
-        }
+        MacroPreProcessor.expandStandardTokens(user, connections);
         
-        // Create a simple read-only directory from the filtered connections
-        connectionDirectory = new SimpleDirectory<Connection>(
-        	connections
-        );
-
-        // Root group contains only connections
-        rootGroup = new SimpleConnectionGroup(
-            LDAP389dsAuthenticationProvider.ROOT_CONNECTION_GROUP,
-            LDAP389dsAuthenticationProvider.ROOT_CONNECTION_GROUP,
-            connectionDirectory.getIdentifiers(),
-            Collections.<String>emptyList()
-        );
-
-        // Expose only the root group in the connection group directory
-        connectionGroupDirectory = new SimpleConnectionGroupDirectory(Collections.singleton(rootGroup));
-
+        folderTreeContext.putConnections (connections);
+        
         // Init self with basic permissions
-        self = new SimpleUser(
-            user.getIdentifier(),
-            userDirectory.getIdentifiers(),
-            connectionDirectory.getIdentifiers(),
-            connectionGroupDirectory.getIdentifiers()
-        );
+        createSimpleUser(user);
 
     }
 
-    @Override
+	private void createSimpleUser(AuthenticatedUser user) throws GuacamoleException {
+		self = new SimpleUser(
+            user.getIdentifier(),
+            userDirectory.getIdentifiers(),
+            getConnectionDirectory().getIdentifiers(),
+            getConnectionGroupDirectory().getIdentifiers()
+        );
+	}
+
+	@Override
     public User self() {
         return self;
     }
@@ -190,20 +163,18 @@ public class UserContext implements org.glyptodon.guacamole.net.auth.UserContext
     }
 
     @Override
-    public Directory<Connection> getConnectionDirectory()
-            throws GuacamoleException {
-        return connectionDirectory;
+    public Directory<Connection> getConnectionDirectory() throws GuacamoleException {
+        return folderTreeContext.getConnectionMap();
     }
 
     @Override
-    public Directory<ConnectionGroup> getConnectionGroupDirectory()
-            throws GuacamoleException {
-        return connectionGroupDirectory;
+    public Directory<ConnectionGroup> getConnectionGroupDirectory() throws GuacamoleException {
+        return folderTreeContext.getFolderMap();
     }
 
     @Override
     public ConnectionGroup getRootConnectionGroup() throws GuacamoleException {
-        return rootGroup;
+    	return folderTreeContext.getRootFolder();
     }
 
     @Override

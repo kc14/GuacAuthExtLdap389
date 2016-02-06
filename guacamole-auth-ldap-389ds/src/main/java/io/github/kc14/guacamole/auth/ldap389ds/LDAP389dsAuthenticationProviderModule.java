@@ -20,16 +20,22 @@
  * THE SOFTWARE.
  */
 
-package org.kc.guacamole.auth.ldap389ds;
-
-import com.google.inject.AbstractModule;
+package io.github.kc14.guacamole.auth.ldap389ds;
 
 import org.glyptodon.guacamole.GuacamoleException;
 import org.glyptodon.guacamole.environment.Environment;
 import org.glyptodon.guacamole.environment.LocalEnvironment;
 import org.glyptodon.guacamole.net.auth.AuthenticationProvider;
-import org.kc.guacamole.auth.ldap389ds.connection.ConnectionService;
-import org.kc.guacamole.auth.ldap389ds.user.UserService;
+
+import com.google.inject.AbstractModule;
+
+import io.github.kc14.guacamole.auth.ldap389ds.config.ConfigurationService;
+import io.github.kc14.guacamole.auth.ldap389ds.connection.ConnectionService;
+import io.github.kc14.guacamole.auth.ldap389ds.connection.ConnectionTreeContext;
+import io.github.kc14.guacamole.auth.ldap389ds.ldap.EscapingService;
+import io.github.kc14.guacamole.auth.ldap389ds.ldap.LDAPConnectionService;
+import io.github.kc14.guacamole.auth.ldap389ds.ldap.searches.LDAPSearchUser;
+import io.github.kc14.guacamole.auth.ldap389ds.user.UserService;
 
 /**
  * Guice module which configures LDAP-specific injections.
@@ -81,8 +87,11 @@ public class LDAP389dsAuthenticationProviderModule extends AbstractModule {
         // Bind LDAP-specific services
         bind(ConfigurationService.class);
         bind(ConnectionService.class);
+        bind(LDAPConnectionService.class);
         bind(EscapingService.class);
         bind(UserService.class);
+        bind(LDAPSearchUser.class);
+        bind(ConnectionTreeContext.class);
 
     }
 
