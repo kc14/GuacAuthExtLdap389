@@ -13,7 +13,7 @@ public abstract class DNHelper {
 		return (Vector<RDN>)dn.getRDNs();
 	}
 	
-	public static boolean isDescendantOf(DN descendantDN, DN forfatherDN){
+	public static boolean isDescendantOf(DN descendantDN, DN forfatherDN) {
 		Vector<RDN> descendantRDNs = getRDNs(descendantDN);
 		Vector<RDN> forfatherRDNs = getRDNs(forfatherDN);
         int descendantRDNIdx = descendantRDNs.size() - 1; // Index to an RDN of the ContainedDN
@@ -30,6 +30,14 @@ public abstract class DNHelper {
         return true;
     }
 
+	/**
+	 * Removes the RDNs of Subtrahend from the back of Minuend
+	 * <p>
+	 * Beware Of: <code>minuendRDNs</code> gets modified in place!
+	 * <p>
+	 * @param minuendRDNs The RDNs from which to subtract the subtrahend's RDNs
+	 * @param subtrahendRDNs The RDNs to subtract
+	 */
 	public static void subtractRDNsFromBack (Vector<RDN> minuendRDNs, Vector<RDN> subtrahendRDNs) {
 		ListIterator<RDN> minuend = minuendRDNs.listIterator(minuendRDNs.size());
 		ListIterator<RDN> subtrahend = subtrahendRDNs.listIterator(subtrahendRDNs.size());
