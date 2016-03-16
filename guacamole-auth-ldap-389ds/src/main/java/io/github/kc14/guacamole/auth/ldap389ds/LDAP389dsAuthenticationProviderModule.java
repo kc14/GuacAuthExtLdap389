@@ -34,7 +34,10 @@ import io.github.kc14.guacamole.auth.ldap389ds.connection.ConnectionService;
 import io.github.kc14.guacamole.auth.ldap389ds.connection.ConnectionTreeContext;
 import io.github.kc14.guacamole.auth.ldap389ds.ldap.EscapingService;
 import io.github.kc14.guacamole.auth.ldap389ds.ldap.LDAPConnectionService;
+import io.github.kc14.guacamole.auth.ldap389ds.ldap.searches.LDAPSearch;
+import io.github.kc14.guacamole.auth.ldap389ds.ldap.searches.LDAPSearchGuacConfigGroup;
 import io.github.kc14.guacamole.auth.ldap389ds.ldap.searches.LDAPSearchUser;
+import io.github.kc14.guacamole.auth.ldap389ds.ldap.searches.LDAPSearchUsersGroups;
 import io.github.kc14.guacamole.auth.ldap389ds.user.UserService;
 
 /**
@@ -90,7 +93,10 @@ public class LDAP389dsAuthenticationProviderModule extends AbstractModule {
         bind(LDAPConnectionService.class);
         bind(EscapingService.class);
         bind(UserService.class);
+        bind(LDAPSearch.class);
         bind(LDAPSearchUser.class);
+        bind(LDAPSearchUsersGroups.class);
+        bind(LDAPSearchGuacConfigGroup.class);
         bind(ConnectionTreeContext.class);
 
     }

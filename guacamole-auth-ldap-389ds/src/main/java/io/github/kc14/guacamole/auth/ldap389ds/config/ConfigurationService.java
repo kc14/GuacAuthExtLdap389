@@ -31,6 +31,7 @@ import org.glyptodon.guacamole.environment.Environment;
  * Service for retrieving configuration information regarding the LDAP server.
  *
  * @author Michael Jumper
+ * @author Frank Kemmer
  */
 public class ConfigurationService {
 
@@ -104,25 +105,6 @@ public class ConfigurationService {
     }
 
     /**
-     * Returns the username attribute which should be used to query and bind
-     * users using the LDAP directory. By default, this will be "uid" - a
-     * common attribute used for this purpose.
-     *
-     * @return
-     *     The username attribute which should be used to query and bind users
-     *     using the LDAP directory.
-     *
-     * @throws GuacamoleException
-     *     If guacamole.properties cannot be parsed.
-     */
-    public String getUsernameAttribute() throws GuacamoleException {
-        return environment.getProperty(
-            LDAP389dsGuacamoleProperties.LDAP_USERNAME_ATTRIBUTE,
-            "uid"
-        );
-    }
-
-    /**
      * Returns the technical user (default bind DN) which will be used
      * to bind to the LDAP directory and to perform LDAP operations.
      *
@@ -154,110 +136,47 @@ public class ConfigurationService {
     }
 
     /**
-     * Returns the base DN under which all Guacamole users will be stored
-     * within the LDAP directory.
+     * Returns the LDAP URL for searching the user given in the credentials.
      *
      * @return
-     *     The base DN under which all Guacamole users will be stored within
-     *     the LDAP directory.
-     *
-     * @throws GuacamoleException
-     *     If guacamole.properties cannot be parsed, or if the user base DN
-     *     property is not specified.
-     */
-    public String getUserBaseDN() throws GuacamoleException {
-        return environment.getRequiredProperty(
-            LDAP389dsGuacamoleProperties.LDAP_USER_BASE_DN
-        );
-    }
-
-    /**
-     * Returns the the LDAP objectclass of a user entry, usually posixAccount,
-     * within the LDAP directory.
-     *
-     * @return
-     *     The LDAP objectclass of user entries in 
-     *     the LDAP directory.
+     *     The LDAP URL.
      *
      * @throws GuacamoleException
      *     If guacamole.properties cannot be parsed.
      */
-    public String getUserObjectClass() throws GuacamoleException {
+    public String getLdapUrlUserByCredentials() throws GuacamoleException {
         return environment.getProperty(
-            LDAP389dsGuacamoleProperties.LDAP_USER_OBJECTCLASS,
-            "posixAccount"
+            LDAP389dsGuacamoleProperties.LDAP_URL_USER_BY_CREDENTIALS
         );
     }
 
     /**
-     * Returns the name of the memberOf attribute for an LDAP user entry.
-     * By default, this will be "memberOf".
+     * Returns the LDAP URL for searching the user's guacConfigGroups in the memberOf-Attribute.
      *
      * @return
-     *     The name of the memberOf attribute, as configured with
-     *     guacamole.properties.
+     *     The LDAP URL.
      *
      * @throws GuacamoleException
      *     If guacamole.properties cannot be parsed.
      */
-    public String getUserMemberOfAttribute() throws GuacamoleException {
+    public String getLdapUrlUsersGroups() throws GuacamoleException {
         return environment.getProperty(
-            LDAP389dsGuacamoleProperties.LDAP_USER_MEMBEROF_ATTRIBUTE,
-            "memberOf"
+            LDAP389dsGuacamoleProperties.LDAP_URL_USERS_GROUPS
         );
     }
 
     /**
-     * Returns the name of the cn-Attribue for an guac configuration group.
-     * By default, this will be "cn".
+     * Returns the LDAP URL for searching a guacConfigGroup (given by ${group}).
      *
      * @return
-     *     The cn-Attribute-Name of a guac configuration group, as configured with
-     *     guacamole.properties.
+     *     The LDAP URL.
      *
      * @throws GuacamoleException
      *     If guacamole.properties cannot be parsed.
      */
-    public String getGuacConfigGroupCnAttribute() throws GuacamoleException {
+    public String getLdapUrlSearchGuacConfigGroup() throws GuacamoleException {
         return environment.getProperty(
-            LDAP389dsGuacamoleProperties.LDAP_GUAC_CONFIG_GROUP_CN_ATTRIBUTE,
-            "cn"
-        );
-    }
-
-    /**
-     * Returns the prefix for an guac configuration group.
-     * By default, this will be "guac".
-     *
-     * @return
-     *     The prefix of a guac configuration group, as configured with
-     *     guacamole.properties.
-     *
-     * @throws GuacamoleException
-     *     If guacamole.properties cannot be parsed.
-     */
-    public String getGuacConfigGroupPrefix() throws GuacamoleException {
-        return environment.getProperty(
-            LDAP389dsGuacamoleProperties.LDAP_GUAC_CONFIG_GROUP_PREFIX,
-            "guac"
-        );
-    }
-
-    /**
-     * Returns the objectclass for guac configuration groups.
-     * By default, this will be "guacConfigGroup".
-     *
-     * @return
-     *     The prefix of a guac configuration group, as configured with
-     *     guacamole.properties.
-     *
-     * @throws GuacamoleException
-     *     If guacamole.properties cannot be parsed.
-     */
-    public String getGuacConfigGroupObjectClass() throws GuacamoleException {
-        return environment.getProperty(
-            LDAP389dsGuacamoleProperties.LDAP_GUAC_CONFIG_GROUP_OBJECTCLASS,
-            "guacConfigGroup"
+            LDAP389dsGuacamoleProperties.LDAP_URL_GUAC_CONFIG_GROUP
         );
     }
 
@@ -273,9 +192,9 @@ public class ConfigurationService {
      *     If guacamole.properties cannot be parsed, or if the configuration
      *     base DN property is not specified.
      */
-    public String getConfigurationBaseDN() throws GuacamoleException {
+    public String getGuacConfigGroupsBaseDN() throws GuacamoleException {
         return environment.getRequiredProperty(
-            LDAP389dsGuacamoleProperties.LDAP_CONFIG_BASE_DN
+            LDAP389dsGuacamoleProperties.LDAP_GUAC_CONFIG_GROUPS_BASE_DN
         );
     }
 

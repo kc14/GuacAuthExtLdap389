@@ -49,7 +49,7 @@ public class ConnectionTreeContext {
         SimpleConnectionGroupDirectory folderMap = createfolderMap();
         
         // Add prefix, so we have configBaseDN as ROOT even when no connections exist
-    	DN configBaseDN = new DN(confService.getConfigurationBaseDN());
+    	DN configBaseDN = new DN(confService.getGuacConfigGroupsBaseDN());
     	putFolders(folderMap, configBaseDN);
 
         // Build tree of connection groups from the DNs (= identifier) of the connections
@@ -181,7 +181,7 @@ public class ConnectionTreeContext {
 	}
 
     public ConnectionGroup getRootFolder() throws GuacamoleException {
-    	DN configBaseDN = new DN(confService.getConfigurationBaseDN());
+    	DN configBaseDN = new DN(confService.getGuacConfigGroupsBaseDN());
         return getFolderMap().get(configBaseDN.toString()); // Return config base as root
         // return getFolderMap().get(LDAP389dsAuthenticationProvider.ROOT_CONNECTION_GROUP);
     }

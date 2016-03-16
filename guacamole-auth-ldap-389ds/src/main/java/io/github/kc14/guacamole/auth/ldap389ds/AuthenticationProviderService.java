@@ -22,6 +22,8 @@
 
 package io.github.kc14.guacamole.auth.ldap389ds;
 
+import java.net.MalformedURLException;
+
 import org.glyptodon.guacamole.GuacamoleException;
 import org.glyptodon.guacamole.GuacamoleServerException;
 import org.glyptodon.guacamole.net.auth.Credentials;
@@ -31,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.novell.ldap.LDAPConnection;
+import com.novell.ldap.LDAPEntry;
 import com.novell.ldap.LDAPException;
 import com.novell.ldap.LDAPSearchResults;
 
@@ -77,8 +80,9 @@ public class AuthenticationProviderService {
     @Inject
     private LDAPSearchUser ldapSearchUser;
 
-    public AuthenticatedUser authenticateUser(Credentials credentials)
-            throws GuacamoleException {
+    public AuthenticatedUser authenticateUser(Credentials credentials) throws GuacamoleException {
+        
+        if (credentials.getUsername() == null || credentials.getUsername().isEmpty()) return null;
 
         // Bind default bindDN
         LDAPConnection ldapConnection = bindDefaultDN();
@@ -92,14 +96,17 @@ public class AuthenticationProviderService {
 	    	LDAPSearchResults ldapSearchResults = ldapSearchUser.searchUserByCredentials(ldapConnection, credentials);
 
             if (ldapSearchResults.hasMore() == false) return null; // No results => not authenticated
-            
+
             // Return AuthenticatedUser if search succeeded
             AuthenticatedUser authenticatedUser = authenticatedUserProvider.get();
             authenticatedUser.init(credentials);
             return authenticatedUser;
         }
         catch (LDAPException e) {
-            throw new GuacamoleServerException("Error while searching for user `" + credentials.getUsername() + "'.", e);
+            throw new GuacamoleServerException("Error while searching for user [" + credentials.getUsername() + "].", e);
+        }
+        catch (MalformedURLException e) {
+            throw new GuacamoleServerException("Error while searching for user [" + credentials.getUsername() + "].", e);
         }
         finally { // Always disconnect
         	ldapService.disconnect(ldapConnection);

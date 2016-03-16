@@ -22,26 +22,13 @@
 
 package io.github.kc14.guacamole.auth.ldap389ds.connection;
 
-import com.google.inject.Inject;
-import com.novell.ldap.LDAPAttribute;
-import com.novell.ldap.LDAPConnection;
-import com.novell.ldap.LDAPEntry;
-import com.novell.ldap.LDAPException;
-import com.novell.ldap.LDAPSearchResults;
-import com.novell.ldap.util.DN;
-import com.novell.ldap.util.RDN;
-
-import io.github.kc14.com.novell.ldap.util.DNHelper;
-import io.github.kc14.guacamole.auth.ldap389ds.config.ConfigurationService;
-import io.github.kc14.guacamole.auth.ldap389ds.ldap.EscapingService;
-import net.sourceforge.guacamole.net.auth.ldap389ds.LDAP389dsAuthenticationProvider;
-
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 
 import org.glyptodon.guacamole.GuacamoleException;
 import org.glyptodon.guacamole.GuacamoleServerException;
@@ -51,6 +38,19 @@ import org.glyptodon.guacamole.net.auth.simple.SimpleConnection;
 import org.glyptodon.guacamole.protocol.GuacamoleConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.inject.Inject;
+import com.novell.ldap.LDAPAttribute;
+import com.novell.ldap.LDAPConnection;
+import com.novell.ldap.LDAPEntry;
+import com.novell.ldap.LDAPException;
+import com.novell.ldap.LDAPSearchResults;
+
+import io.github.kc14.guacamole.auth.ldap389ds.config.ConfigurationService;
+import io.github.kc14.guacamole.auth.ldap389ds.ldap.EscapingService;
+import io.github.kc14.guacamole.auth.ldap389ds.ldap.searches.LDAPSearchGuacConfigGroup;
+import io.github.kc14.guacamole.auth.ldap389ds.ldap.searches.LDAPSearchUsersGroups;
+import net.sourceforge.guacamole.net.auth.ldap389ds.LDAP389dsAuthenticationProvider;
 
 /**
  * Service for querying the connections available to a particular Guacamole
@@ -77,6 +77,18 @@ public class ConnectionService {
      */
     @Inject
     private ConfigurationService confService;
+    
+    /**
+     * Provider for LDAP searches of a user's groups.
+     */
+    @Inject
+    private LDAPSearchUsersGroups ldapSearchUsersGroups;
+
+    /**
+     * Provider for LDAP searches of guac config groups.
+     */
+    @Inject
+    private LDAPSearchGuacConfigGroup ldapSearchGuacConfigGroup;
 
     private static final List<String> GUAC_CONFIG_GROUP_ATTRIBUTES = new ArrayList<String>() {{
         add("cn");
@@ -86,140 +98,54 @@ public class ConnectionService {
 
 	/**
 	 * Search for the authenticated user entry 
-	 * 
-	 * @param user
-	 *     The authenticated user
 	 * @param ldapConnection
 	 *     The LDAP connection to use, bind with the default bind DN,
 	 *     i.e. the technical user to query the LDAP directory service
+	 * @param user
+	 *     The authenticated user
+	 * 
 	 * @return
 	 * @throws GuacamoleException
 	 */
-	protected LDAPSearchResults ldapsearchUserEntryMemberOf(AuthenticatedUser user, LDAPConnection ldapConnection) throws GuacamoleException {
-		
-        String username = user.getCredentials().getUsername();
-    	String userBaseDN = confService.getUserBaseDN();
-        int searchScopeOne = LDAPConnection.SCOPE_ONE;
-        String userObjectClass = confService.getUserObjectClass();
-        String usernameAttribute = confService.getUsernameAttribute();
-        String memberOfAttribute = confService.getUserMemberOfAttribute();
-        String userSearchFilter = "(&(objectClass=" + userObjectClass + ")(" + escapingService.escapeLDAPSearchFilter(usernameAttribute) + "=" + username + "))";
-        String attrMemberOf[] = { memberOfAttribute };
-        boolean typesOnlyFalse = false;            
-
+	protected LDAPSearchResults ldapsearchUsersGroups(LDAPConnection ldapConnection, AuthenticatedUser user) throws GuacamoleException {
         try {
-
-            // Get memberOf attribute of user given by credentials
-            LDAPSearchResults userEntryMemberOfSearchResult = ldapConnection.search(userBaseDN, searchScopeOne, userSearchFilter, attrMemberOf, typesOnlyFalse);
+            LDAPSearchResults userEntryMemberOfSearchResult = ldapSearchUsersGroups.searchUsersGroups(ldapConnection, user);
             return userEntryMemberOfSearchResult;      
-
         }
         catch (LDAPException e) {
         	if (e.getResultCode() == LDAPException.NO_SUCH_OBJECT) {
-        		logger.info("No user entry found for `" + username + "' at base DN `" + userBaseDN + "'");
+        		logger.info("No user entry found for [" + user.getCredentials().getUsername() + "] by ldap url [" + confService.getLdapUrlUsersGroups() + "]");
         		return null;
         	}
-            throw new GuacamoleServerException("Error while searching for guac configuration groups (i.e. memberOf-attribute: `" + memberOfAttribute + "') of user `" + username + "'.", e);
+            throw new GuacamoleServerException("Error while searching for groups of user [" + user.getCredentials().getUsername() + "] by ldap url [" + confService.getLdapUrlUsersGroups() + "].", e);
+        }
+        catch (MalformedURLException e) {
+            throw new GuacamoleServerException("Error[Malformed URL] while searching for groups of user [" + user.getCredentials().getUsername() + "] by ldap url [" + confService.getLdapUrlUsersGroups() + "].", e);
         }
 	}
 	
-    /**
-     * Check whether the given guac config group lives under the config base DN
-     * 
-     * @param guacConfigGroupDN
-     * @return
-     * @throws GuacamoleException
-     */
-    protected boolean isDescendantOfConfigBaseDN (DN guacConfigGroupDN) throws GuacamoleException {
-		// Ensure that the guac config group lives under the configuration base DN
-    	DN configBaseDN = new DN(confService.getConfigurationBaseDN());
-    	if (guacConfigGroupDN.isDescendantOf(configBaseDN) == false) { // isDecendantOf does not work as expected				
-			logger.warn(
-					"guacConfigGroup \"{}\" is not an element of configuration base DN \"{}\" (entry ignored).",
-					guacConfigGroupDN,
-					configBaseDN);
-			return false;
-		}
-    	return true;
-    }
-    
-    /**
-     * Check whether the given guac config group lives under the config base DN
-     * 
-     * @param guacConfigGroupDN
-     * @return
-     * @throws GuacamoleException
-     */
-    protected boolean isDescendantOfConfigBaseDN_simple (DN guacConfigGroupDN) throws GuacamoleException {
-		// Ensure that the guac config group lives under the configuration base DN
-    	DN configBaseDN = new DN(confService.getConfigurationBaseDN());
-    	if (guacConfigGroupDN.toString().toLowerCase().endsWith(configBaseDN.toString().toLowerCase()) == false) {					
-			logger.warn(
-					"guacConfigGroup \"{}\" is not an element of configuration base DN \"{}\" (entry ignored).",
-					guacConfigGroupDN,
-					configBaseDN);
-			return false;
-		}
-    	return true;
-    }
-    
-    /**
-     * Check if guac config group starts with configured prefix
-     * 
-     * @param guacConfigGroupDN
-     * @return
-     * @throws GuacamoleException
-     */
-    protected boolean startsWithConfigGroupPrefix(DN guacConfigGroupDN) throws GuacamoleException {
-		Vector<RDN> guacConfigGroupRDNs = DNHelper.getRDNs(guacConfigGroupDN);
-		String guacConfigGroupPrefix = confService.getGuacConfigGroupPrefix();
-		if (guacConfigGroupRDNs.isEmpty() || guacConfigGroupRDNs.firstElement().getValue().toLowerCase().startsWith(guacConfigGroupPrefix.toLowerCase()) == false) {
-			logger.info(
-					"group \"{}\" will not be considered as a guacConfigGroup since it has not the configured prefix \"{}\" (entry ignored).",
-					guacConfigGroupDN,
-					guacConfigGroupPrefix);
-			return false;
-		}
-		return true;
-    }
-    
 	/**
 	 * LDAP search for the guac configuration group given as DN in guacConfigGroup
-	 * @param guacConfigGroup
-	 *     The DN of a guacConfigGroup as given in the memberOf-Attribute
-	 *     of the posixAccount of the authenticated user
 	 * @param ldapConnection
 	 *     The LDAP connection to use, bind with the default bind DN,
 	 *     i.e. the technical user to query the LDAP directory service
+	 * @param guacConfigGroup
+	 *     The DN of a guacConfigGroup as given in the memberOf-Attribute
+	 *     of the posixAccount of the authenticated user
 	 * @return
 	 *     The LDAP search result containing the base entry for the given guac config group
 	 *     retrieving the attributes given in GUAC_CONFIG_GROUP_ATTRIBUTES
 	 * @throws GuacamoleException
 	 */
-	protected LDAPSearchResults ldapsearchGuacConfigGroup(String guacConfigGroup, LDAPConnection ldapConnection)
-			throws GuacamoleException {
-		DN guacConfigGroupDN = new DN(guacConfigGroup);
-
-		// Is guac config group a descendant of configuration base DN?
-		if (isDescendantOfConfigBaseDN_simple(guacConfigGroupDN) == false) return null;
-	
-		// Check if guac config group starts with configured prefix
-		if (startsWithConfigGroupPrefix(guacConfigGroupDN) == false) return null;
-		
-		// Search given guacamole config group
-		String guacConfigGroupSearchBaseDN = guacConfigGroup;
-		int searchScopeBase = LDAPConnection.SCOPE_BASE;
-		String guacObjectClass = confService.getGuacConfigGroupObjectClass();
-		String guacConfigGroupSearchFilter = "(objectClass=" + guacObjectClass + ")";
-		String[] guacConfigAttrs = new String[GUAC_CONFIG_GROUP_ATTRIBUTES.size()];
-		guacConfigAttrs = GUAC_CONFIG_GROUP_ATTRIBUTES.toArray(guacConfigAttrs);
-		boolean typesOnlyFalse = false;
+	protected LDAPSearchResults ldapsearchGuacConfigGroup(LDAPConnection ldapConnection, String guacConfigGroup) throws GuacamoleException {
 		try {
-			LDAPSearchResults guacConfigGroupsSearchResult = ldapConnection.search(guacConfigGroupSearchBaseDN, searchScopeBase, guacConfigGroupSearchFilter, guacConfigAttrs, typesOnlyFalse);
+			LDAPSearchResults guacConfigGroupsSearchResult = ldapSearchGuacConfigGroup.ldapsearchGuacConfigGroup(ldapConnection, guacConfigGroup);
 			return guacConfigGroupsSearchResult;
 		} catch (LDAPException e) {
 			throw new GuacamoleServerException("Error while searching for guac configuration group `" + guacConfigGroup + "'.", e);
-		}
+		} catch (MalformedURLException e) {
+            throw new GuacamoleServerException("Error[Malformed URL] while searching for guac config group [" + guacConfigGroup + "] by ldap url [" + confService.getLdapUrlSearchGuacConfigGroup() + "].", e);
+        }
 	}
 
 	/**
@@ -260,17 +186,13 @@ public class ConnectionService {
 	 *    cn: the guac config group name
 	 *    guacConfigProtocol: the protocol, eg. VPN, SSH, etc.
 	 *    guacConfigParameter: more parameters to use for configuration of the guac connection
-	 * 
 	 * @param guacConfigGroupsSearchResult
 	 *     The LDAP search result containing the guac config group entries to process
-	 * @param ldapConnection
-	 *     The LDAP connection to use, bind with the default bind DN,
-	 *     i.e. the technical user to query the LDAP directory service
 	 * @return
 	 *     The connections configured by the given guac config groups 
 	 * @throws GuacamoleServerException
 	 */
-	protected Map<String, Connection> processGuacConfigGroupLdapEntries(LDAPSearchResults guacConfigGroupsSearchResult, LDAPConnection ldapConnection) throws GuacamoleServerException {
+	protected Map<String, Connection> processGuacConfigGroupLdapEntries(LDAPSearchResults guacConfigGroupsSearchResult) throws GuacamoleServerException {
 		// Produce connections for each readable configuration
 		Map<String, Connection> connections = new HashMap<String, Connection>();
 		try {
@@ -318,38 +240,36 @@ public class ConnectionService {
     
 	/**
 	 * Create the connections from the given guac config groups
-	 * @param user
-	 *     The authenticated user
-	 * @param guacConfigGroups
 	 * @param ldapConnection
 	 *     The LDAP connection to use, bind with the default bind DN,
 	 *     i.e. the technical user to query the LDAP directory service
+	 * @param user
+	 *     The authenticated user
+	 * @param guacConfigGroups
 	 * @return
 	 *     The connections for the given guac config groups
 	 * @throws GuacamoleException
 	 */
-	protected Map<String, Connection> getConnections(AuthenticatedUser user, String[] guacConfigGroups, LDAPConnection ldapConnection) throws GuacamoleException {
+	protected Map<String, Connection> getConnections(LDAPConnection ldapConnection, AuthenticatedUser user, String[] guacConfigGroups) throws GuacamoleException {
 		Map<String, Connection> connections = new HashMap<String, Connection>();
 		for (String guacConfigGroup : guacConfigGroups) {
-			LDAPSearchResults guacConfigGroupsSearchResult = ldapsearchGuacConfigGroup(guacConfigGroup, ldapConnection);
+			LDAPSearchResults guacConfigGroupsSearchResult = ldapsearchGuacConfigGroup(ldapConnection, guacConfigGroup);
 			
 			if (guacConfigGroupsSearchResult == null) continue; // Group not found ... just ignore
 
-			connections.putAll(processGuacConfigGroupLdapEntries(guacConfigGroupsSearchResult, ldapConnection));
+			connections.putAll(processGuacConfigGroupLdapEntries(guacConfigGroupsSearchResult));
 		}
 		return connections; // Return map of all connections
 	}
 
     /**
      * Returns all Guacamole connections accessible to the authenticated user
-     * 
-     * @param user
-     *     The authenticated user. 
-     *
      * @param ldapConnection
      *     The current connection to the LDAP server, associated with the
      *     current user.
-     *
+     * @param user
+     *     The authenticated user. 
+     * 
      * @return
      *     All connections accessible to the authenticated user by the guac
      *     config groups he is a member of.
@@ -360,38 +280,36 @@ public class ConnectionService {
      * @throws GuacamoleException
      *     If an error occurs preventing retrieval of connections.
      */
-    public Map<String, Connection> getConnections(AuthenticatedUser user, LDAPConnection ldapConnection)
-            throws GuacamoleException {
+    public Map<String, Connection> getConnections(LDAPConnection ldapConnection, AuthenticatedUser user) throws GuacamoleException {
 
         try {
         	
-        	LDAPSearchResults userEntryMemberOfSearchResult = ldapsearchUserEntryMemberOf(user, ldapConnection);
+        	LDAPSearchResults usersGroupsSearchResult = ldapsearchUsersGroups(ldapConnection, user);
 
             Map<String, Connection> connections = new HashMap<String, Connection>();
             
             String username = user.getCredentials().getUsername();
-            String memberOfAttribute = confService.getUserMemberOfAttribute();
 
-            if (userEntryMemberOfSearchResult == null) {
-            	logger.info("User `" + username + "' not found => no connections.");
+            if (usersGroupsSearchResult == null) {
+            	logger.info("No groups for user [" + username + "] found => no connections.");
             	return connections;
             }
             
-            // Get memberOf attribute of user given by credentials
-            while (userEntryMemberOfSearchResult.hasMore()) {
-                LDAPEntry userEntry = userEntryMemberOfSearchResult.next();
+            // Get groups of user given by credentials (we take the values of all returned attributes as groups)
+            while (usersGroupsSearchResult.hasMore()) {
+                LDAPEntry userEntry = usersGroupsSearchResult.next();
 
-                // Get member of (memberOf-Attribute)
-                LDAPAttribute memberOf = userEntry.getAttribute(memberOfAttribute);
-                if (memberOf == null) {
-                    logger.info("The user `" + username +  "' has no guacConfigGroups.");
-                    continue;
+                // Get groups by extracting the values of all attributes in the given entry
+                for (@SuppressWarnings("unchecked") Iterator<LDAPAttribute> attrIter = userEntry.getAttributeSet().iterator(); attrIter.hasNext();) {
+                    LDAPAttribute attr = attrIter.next();
+                    String[] groups = attr.getStringValueArray();
+                    if (groups.length > 0) {
+                        connections.putAll(getConnections(ldapConnection, user, groups));
+                    }
+                    else {
+                        logger.info("The user `" + username +  "' has no values in the attribute: [" + attr.getName() + "]");
+                    }
                 }
-                
-                // Search for the guac config groups
-                String[] guacConfigGroups = memberOf.getStringValueArray();
-                connections.putAll(getConnections(user, guacConfigGroups, ldapConnection));
-                            	
             }
             
             return connections;

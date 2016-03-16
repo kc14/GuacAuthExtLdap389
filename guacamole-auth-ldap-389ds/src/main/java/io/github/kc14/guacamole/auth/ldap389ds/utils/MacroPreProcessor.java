@@ -4,6 +4,7 @@ import java.util.Map;
 
 import org.glyptodon.guacamole.net.auth.AuthenticatedUser;
 import org.glyptodon.guacamole.net.auth.Connection;
+import org.glyptodon.guacamole.net.auth.Credentials;
 import org.glyptodon.guacamole.token.StandardTokens;
 import org.glyptodon.guacamole.token.TokenFilter;
 
@@ -20,4 +21,16 @@ public class MacroPreProcessor {
 	    }
 	}
 
+    public static String expandStandardTokens(Credentials credentials, String s) {
+        // Build credential TokenFilter
+        TokenFilter tokenFilter = new TokenFilter();
+        StandardTokens.addStandardTokens(tokenFilter, credentials);
+        return tokenFilter.filter(s);
+    }
+
+	public static String expandTokens(Map<String, String> tokens, String s) {
+        TokenFilter tokenFilter = new TokenFilter();
+        tokenFilter.setTokens(tokens);
+	    return tokenFilter.filter(s);
+	}
 }

@@ -127,7 +127,7 @@ public class UserContext implements org.glyptodon.guacamole.net.auth.UserContext
         );
 
         // Query all accessible connections
-        Map<String, Connection> connections = connectionService.getConnections(user, ldapConnection);
+        Map<String, Connection> connections = connectionService.getConnections(ldapConnection, user);
         
         MacroPreProcessor.expandStandardTokens(user, connections);
         

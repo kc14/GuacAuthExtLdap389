@@ -74,39 +74,6 @@ public class LDAP389dsGuacamoleProperties {
     };
 
     /**
-     * The base DN to search for Guacamole configurations.
-     */
-    public static final StringGuacamoleProperty LDAP_CONFIG_BASE_DN = new StringGuacamoleProperty() {
-
-        @Override
-        public String getName() { return "ldap-config-base-dn"; }
-
-    };
-
-    /**
-     * The base DN of users. All users must be direct children of this DN,
-     * varying only by LDAP_USERNAME_ATTRIBUTE.
-     */
-    public static final StringGuacamoleProperty LDAP_USER_BASE_DN = new StringGuacamoleProperty() {
-
-        @Override
-        public String getName() { return "ldap-user-base-dn"; }
-
-    };
-
-    /**
-     * The attribute which identifies users. This attribute must be part of
-     * each user's DN such that the concatenation of this attribute and
-     * LDAP_USER_BASE_DN equals the users full DN.
-     */
-    public static final StringGuacamoleProperty LDAP_USERNAME_ATTRIBUTE = new StringGuacamoleProperty() {
-
-        @Override
-        public String getName() { return "ldap-username-attribute"; }
-
-    };
-
-    /**
      * The default bind DN to use for LDAP operations.
      */
     public static final StringGuacamoleProperty LDAP_DEFAULT_BIND_DN = new StringGuacamoleProperty() {
@@ -127,52 +94,42 @@ public class LDAP389dsGuacamoleProperties {
     };
 
     /**
-     * The default bind DN to use for LDAP operations.
+     * The LDAP search to use for finding and authenticating a user (use ${GUAC_USERNAME} to reference the user name and ${GUAC_PASSWORD} for the password).
      */
-    public static final StringGuacamoleProperty LDAP_USER_OBJECTCLASS = new StringGuacamoleProperty() {
+    public static final StringGuacamoleProperty LDAP_URL_USER_BY_CREDENTIALS = new StringGuacamoleProperty() {
 
         @Override
-        public String getName() { return "ldap-user-object-class"; }
+        public String getName() { return "ldap-url-user-by-credentials"; }
+
+    };
+    
+    /**
+     * Find the groups for an authenticated user (use ${GUAC_USERNAME} to reference the authenticated user name).
+     */
+    public static final StringGuacamoleProperty LDAP_URL_USERS_GROUPS = new StringGuacamoleProperty() {
+
+        @Override
+        public String getName() { return "ldap-url-users-groups"; }
+
+    };
+    
+    /**
+     * LDAP URL to find a given guacConfigGroup (use ${GUAC_CONFIG_GROUP} to reference the group to find).
+     */
+    public static final StringGuacamoleProperty LDAP_URL_GUAC_CONFIG_GROUP = new StringGuacamoleProperty() {
+
+        @Override
+        public String getName() { return "ldap-url-guac-config-group"; }
 
     };
 
     /**
-     * The name of the memberOf attribute for a user.
+     * The base DN to search for Guacamole configurations.
      */
-    public static final StringGuacamoleProperty LDAP_USER_MEMBEROF_ATTRIBUTE = new StringGuacamoleProperty() {
+    public static final StringGuacamoleProperty LDAP_GUAC_CONFIG_GROUPS_BASE_DN = new StringGuacamoleProperty() {
 
         @Override
-        public String getName() { return "ldap-user-memberof-attribute"; }
-
-    };
-
-    /**
-     * The cn attribute name for ldap guacamole configuration groups.
-     */
-    public static final StringGuacamoleProperty LDAP_GUAC_CONFIG_GROUP_CN_ATTRIBUTE = new StringGuacamoleProperty() {
-
-        @Override
-        public String getName() { return "ldap-guac-config-group-cn-attribute"; }
-
-    };
-
-    /**
-     * The prefix for ldap guacamole configuration groups.
-     */
-    public static final StringGuacamoleProperty LDAP_GUAC_CONFIG_GROUP_PREFIX = new StringGuacamoleProperty() {
-
-        @Override
-        public String getName() { return "ldap-guac-config-group-prefix"; }
-
-    };
-
-    /**
-     * The objectclass for ldap guacamole configuration groups.
-     */
-    public static final StringGuacamoleProperty LDAP_GUAC_CONFIG_GROUP_OBJECTCLASS = new StringGuacamoleProperty() {
-
-        @Override
-        public String getName() { return "ldap-guac-config-group-objectclass"; }
+        public String getName() { return "ldap-guac-config-groups-base-dn"; }
 
     };
 
